@@ -15,7 +15,7 @@ pp = pprint.PrettyPrinter(width=20)
 
 # Configuration variables
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
-_batch_size = 25
+_batch_size = 128
 _shuffle    = True
 _num_wrks   = 4
 
