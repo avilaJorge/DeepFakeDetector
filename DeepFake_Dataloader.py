@@ -28,7 +28,7 @@ data_origin = {
 # Configuration variables
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
 fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-_batch_size = 128
+_batch_size = 512
 _shuffle    = True
 _num_wrks   = 8
 epsilon     = 1e-10
