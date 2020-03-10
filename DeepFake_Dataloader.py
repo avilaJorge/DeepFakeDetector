@@ -8,6 +8,8 @@ from torchvision.datasets import ImageFolder
 import numpy as np
 # Image imports (PIL)
 from PIL import Image
+# hdf5 import
+import h5py
 # Pretty Print
 import pprint
 pp = pprint.PrettyPrinter(width=20)
@@ -21,12 +23,12 @@ data_origin = {
     1: 'Flickr-Faces-HQ_10K',
     2: 'thispersondoesntexists_10K',
     3: '100KFake_10K'
-    
 }
 
 # Configuration variables
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
-_batch_size = 5
+fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
+_batch_size = 128
 _shuffle    = True
 _num_wrks   = 8
 epsilon     = 1e-10
@@ -141,6 +143,27 @@ class DeepFakeDataset(ImageFolder):
         
         return rad_p, self.switcher[self.classes[t]]
     
+class DeepFakeHDF5Dataset(Dataset):
+    
+    def __init__(self, hdf5_path=fhq_hdf5_pt):
+        super(DeepFakeHDF5Dataset, self).__init__()
+        self.data = None
+        self.lbls = None
+        self.og_d = None
+        with h5py.File(fhq_hdf5_pt, 'r') as hdf5_file: 
+            self.data = hdf5_file['fft_data'][:]
+            self.lbls = hdf5_file['lbl_data'][:]
+            self.og_d = hdf5_file['orgn_data'][:]
+        
+    def __getitem__(self, index):
+        if self.lbls[index] != 1 and self.lbls[index] != 0:
+            print(self.lbls[index])
+        return (torch.from_numpy(self.data[index,:]).float(), 
+                torch.FloatTensor([1]) * self.lbls[index])
+    
+    def __len__(self):
+        return self.data.shape[0]
+    
 def get_preprocessors(image_root=img_root, 
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
@@ -161,7 +184,7 @@ def get_dataloaders(image_root=img_root,
                    shuffle=_shuffle, 
                    num_workers=_num_wrks):
     
-    ds = DeepFakeDataset(root=img_root, transforms=transforms)
+    ds = DeepFakeHDF5Dataset() 
     
     # Compute train, val, test splits
     trn_len, val_len, tst_len = int(len(ds)*0.6), int(len(ds)*0.2), int(len(ds)*0.2)
