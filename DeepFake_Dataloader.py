@@ -29,6 +29,7 @@ img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
 _batch_size = 5
 _shuffle    = True
 _num_wrks   = 8
+epsilon     = 1e-10
 
 data_transforms = transforms.Compose([
     transforms.ToTensor(),
@@ -62,7 +63,7 @@ def radial_profile(data, center):
 def np_magnitude_spectrum(img):
     f = np.fft.fft2(img)
     f = np.fft.fftshift(f)
-    return 20*np.log(np.abs(f))
+    return 20*np.log(np.abs(f) + epsilon)
 
 def magnitude_spectrum(img):
     t_img =  torch.rfft(img, signal_ndim=2, onesided=False) * 255
@@ -89,7 +90,7 @@ class DeepFakePreProcessor(ImageFolder):
     def __init__(self, root, transforms):
         super(DeepFakePreProcessor, self).__init__(root=root, 
                                               loader=pil_grey_loader,
-                                              transform=transforms)
+                                              transform=None)
         
         self.images = self.samples
         pp.pprint("Classes: %s" % self.classes)
@@ -107,9 +108,8 @@ class DeepFakePreProcessor(ImageFolder):
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
         
-        ms_img = magnitude_spectrum(img.squeeze(0).float())
-        rad_p = radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
-        
+        ms_img = np_magnitude_spectrum(img)
+        rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
         return rad_p, self.switcher[self.classes[t]], self.classes[t]
     
 
