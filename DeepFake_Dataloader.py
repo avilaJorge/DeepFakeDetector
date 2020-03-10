@@ -12,12 +12,23 @@ from PIL import Image
 import pprint
 pp = pprint.PrettyPrinter(width=20)
 
+data_origin = {
+    'celebA-HQ_10K': 0,
+    'Flickr-Faces-HQ_10K': 1,
+    'thispersondoesntexists_10K': 2,
+    '100KFake_10K': 3,
+    0: 'celebA-HQ_10K',
+    1: 'Flickr-Faces-HQ_10K',
+    2: 'thispersondoesntexists_10K',
+    3: '100KFake_10K'
+    
+}
 
 # Configuration variables
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
-_batch_size = 128
+_batch_size = 5
 _shuffle    = True
-_num_wrks   = 4
+_num_wrks   = 8
 
 data_transforms = transforms.Compose([
     transforms.ToTensor(),
@@ -73,6 +84,34 @@ def pil_grey_loader(path):
     with open(path, 'rb') as f:
         img = Image.open(f)
         return img.convert('L')
+    
+class DeepFakePreProcessor(ImageFolder):
+    def __init__(self, root, transforms):
+        super(DeepFakePreProcessor, self).__init__(root=root, 
+                                              loader=pil_grey_loader,
+                                              transform=transforms)
+        
+        self.images = self.samples
+        pp.pprint("Classes: %s" % self.classes)
+        pp.pprint("Indices: %s" % self.class_to_idx)
+        """
+        Target folders where 1 is fake and 0 is real
+        """
+        self.switcher = {
+            'celebA-HQ_10K': 0,
+            'Flickr-Faces-HQ_10K': 0,
+            'thispersondoesntexists_10K': 1,
+            '100KFake_10K': 1
+        }
+        
+    def __getitem__(self, index):
+        img, t = super(DeepFakePreProcessor, self).__getitem__(index)
+        
+        ms_img = magnitude_spectrum(img.squeeze(0).float())
+        rad_p = radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
+        
+        return rad_p, self.switcher[self.classes[t]], self.classes[t]
+    
 
 class DeepFakeDataset(ImageFolder):
     
@@ -101,6 +140,19 @@ class DeepFakeDataset(ImageFolder):
         rad_p = radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
         
         return rad_p, self.switcher[self.classes[t]]
+    
+def get_preprocessors(image_root=img_root, 
+                   transforms=data_transforms, 
+                   batch_size=_batch_size, 
+                   shuffle=_shuffle, 
+                   num_workers=_num_wrks):
+    
+    ds = DeepFakePreProcessor(root=img_root, transforms=transforms)
+    
+    return DataLoader(ds,
+                      batch_size=batch_size, 
+                      shuffle=shuffle, 
+                      num_workers=num_workers)
         
 
 def get_dataloaders(image_root=img_root, 
