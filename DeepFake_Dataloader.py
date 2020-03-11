@@ -162,10 +162,7 @@ class DeepFakeHDF5Dataset(Dataset):
             self.og_d = hdf5_file['orgn_data'][:]
         
     def __getitem__(self, index):
-        if self.lbls[index] != 1 and self.lbls[index] != 0:
-            print(self.lbls[index])
 
-        # TODO: Will probably normalize and convert to [0.0, 1.0] in preprocessing step
         sample = torch.from_numpy(self.data[index,:]).float()
         label  = ((torch.FloatTensor([1]) * self.lbls[index]))
         return sample, label
@@ -174,6 +171,17 @@ class DeepFakeHDF5Dataset(Dataset):
     def __len__(self):
         return self.data.shape[0]
 
+class DeepFakeHDF5Dataset_SVM(DeepFakeHDF5Dataset):
+    
+    def __init__(self, hdf5_path=fhq_hdf5_pt):
+        super(DeepFakeHDF5Dataset_SVM, self).__init__()
+        
+    def __getitem__(self, index):
+
+        sample = torch.from_numpy(self.data[index,:]).float()
+        label  = 1  if self.lbls[index] == 1 else -1
+        label  = (torch.FloatTensor([1]) * label)
+        return sample, label
 
 
 """
@@ -197,13 +205,14 @@ def get_preprocessors(image_root=img_root,
     get_dataloaders
     Helper method for creating and returning the all three dataloaders
 """
-def get_dataloaders(image_root=img_root, 
+def get_dataloaders(image_root=img_root,
+                   dataset=DeepFakeHDF5Dataset(),
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
                    shuffle=_shuffle, 
                    num_workers=_num_wrks):
     
-    ds = DeepFakeHDF5Dataset() 
+    ds = dataset
     
     # Compute train, val, test splits
     trn_len, val_len, tst_len = int(len(ds)*0.6), int(len(ds)*0.2), int(len(ds)*0.2)
