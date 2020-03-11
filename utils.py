@@ -3,7 +3,8 @@ from datetime import datetime
 from IPython.display import HTML, display
 
 # Paths and filenames for saving models/output
-path = '/home/jupyter/CSE253_FinalProject/Logistic_Regression/'
+# path = '/home/jupyter/CSE253_FinalProject/Logistic_Regression/'
+path = '/content/Logistic_Regression'
 dt = datetime.now().strftime("%m_%d_%H_%M")
 output_fn     = path + "model_output_" + dt + ".txt"
 captions_fn   = path + "model_captions_" + dt + ".txt"

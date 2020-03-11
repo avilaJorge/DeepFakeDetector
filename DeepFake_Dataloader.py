@@ -1,8 +1,9 @@
 # PyTorch imports
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms, datasets
 from torchvision.datasets import ImageFolder
+from torch.utils.data import Dataset, DataLoader, random_split
+
 
 # numpy imports
 import numpy as np
@@ -27,14 +28,19 @@ data_origin = {
 
 # Configuration variables
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
-fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
+# fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
+fhq_hdf5_pt = '/content/Faces_HQ.hdf5'
 _batch_size = 512
 _shuffle    = True
 _num_wrks   = 8
 epsilon     = 1e-10
 
+"""
+  Transformation applied to grayscale images
+"""
 data_transforms = transforms.Compose([
     transforms.ToTensor(),
+    transforms.Normalize([0.5], [0.5])
 ])
 
 
@@ -158,12 +164,29 @@ class DeepFakeHDF5Dataset(Dataset):
     def __getitem__(self, index):
         if self.lbls[index] != 1 and self.lbls[index] != 0:
             print(self.lbls[index])
-        return (torch.from_numpy(self.data[index,:]).float(), 
-                torch.FloatTensor([1]) * self.lbls[index])
+
+        # TODO: Will probably normalize and convert to [0.0, 1.0] in preprocessing step
+        sample = torch.from_numpy(self.data[index,:]).float()
+        label  = ((torch.FloatTensor([1]) * self.lbls[index]))
+        return sample, label
+                
     
     def __len__(self):
         return self.data.shape[0]
+
+"""
+    check_dims
+    Checks that the batch is of dimensions Nx1x725
+"""
+def check_dims(batch):
+    if (batch.size(0) == 1): return batch
+    return batch.unsqueeze(1)
     
+
+"""
+    get_preprocessor
+    Helper method for creating and returning the preprocessor
+"""
 def get_preprocessors(image_root=img_root, 
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
@@ -177,7 +200,10 @@ def get_preprocessors(image_root=img_root,
                       shuffle=shuffle, 
                       num_workers=num_workers)
         
-
+"""
+    get_dataloaders
+    Helper method for creating and returning the all three dataloaders
+"""
 def get_dataloaders(image_root=img_root, 
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
@@ -191,7 +217,7 @@ def get_dataloaders(image_root=img_root,
     trn_len += (len(ds) - (trn_len + val_len + tst_len))
     
     trn, val, tst = random_split(ds, [trn_len, val_len, tst_len]) 
-    trn_dl = DataLoader(trn, 
+    trn_dl = DataLoader(trn,
                         batch_size=batch_size, 
                         shuffle=shuffle, 
                         num_workers=num_workers)

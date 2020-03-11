@@ -22,20 +22,10 @@ class LinearRegression(nn.Module):
     
     def __init__(self, in_dims, out_dims, mid_dims):
         super(LinearRegression, self).__init__()
-        self.linear_in  = nn.Linear(in_dims, mid_dims)
-        self.linear_mid = nn.Linear(mid_dims, out_dims)
-        self.linear_out = nn.Linear(out_dims, 1)
+        self.linear_in  = nn.Linear(725, 1)
+        # self.linear_mid = nn.Linear(mid_dims, out_dims)
+        # self.linear_out = nn.Linear(out_dims, 1)
         
     def forward(self, x):
-        y = torch.sigmoid(
-            self.linear_out(
-                    torch.sigmoid(
-                        self.linear_mid(
-                                torch.sigmoid(
-                                    self.linear_in(x)
-                                )
-                        )
-                    )
-            )
-        )
+        y = torch.sigmoid(self.linear_in(x))
         return y
