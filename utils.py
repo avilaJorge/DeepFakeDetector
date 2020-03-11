@@ -18,6 +18,15 @@ def print_info(out_str):
     f.write(out_str)
     f.close()
 
+"""
+    check_dims
+    Checks that the batch is of dimensions Nx1x725
+"""
+def check_dims(batch):
+    if (batch.size(0) == 1): return batch
+    return batch.unsqueeze(1)
+    
+
 class ProgressMonitor(object):
     """
     Custom IPython progress bar for training

@@ -20,12 +20,12 @@ def save_model(decoder, name, date, model_path, encoder=None, specify_fn=False, 
 
 class LinearRegression(nn.Module):
     
-    def __init__(self, in_dims, out_dims, mid_dims):
+    def __init__(self, in_dims):
         super(LinearRegression, self).__init__()
         self.linear_in  = nn.Linear(725, 1)
-        # self.linear_mid = nn.Linear(mid_dims, out_dims)
-        # self.linear_out = nn.Linear(out_dims, 1)
+        self.sigmoid    = nn.Sigmoid()
+        self.batch_norm = torch.nn.BatchNorm1d(1)
         
     def forward(self, x):
-        y = torch.sigmoid(self.linear_in(x))
+        y = self.linear_in(self.batch_norm(x)).squeeze(-1)
         return y

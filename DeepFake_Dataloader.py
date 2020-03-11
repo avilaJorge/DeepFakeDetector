@@ -30,7 +30,7 @@ data_origin = {
 img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
 # fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
 fhq_hdf5_pt = '/content/Faces_HQ.hdf5'
-_batch_size = 512
+_batch_size = 128
 _shuffle    = True
 _num_wrks   = 8
 epsilon     = 1e-10
@@ -174,14 +174,7 @@ class DeepFakeHDF5Dataset(Dataset):
     def __len__(self):
         return self.data.shape[0]
 
-"""
-    check_dims
-    Checks that the batch is of dimensions Nx1x725
-"""
-def check_dims(batch):
-    if (batch.size(0) == 1): return batch
-    return batch.unsqueeze(1)
-    
+
 
 """
     get_preprocessor
