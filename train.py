@@ -20,7 +20,9 @@ def train(model,
                 validation_loader,
                 model_name,
                 path,
+                acc_thresh=0.5,
                 predicter=None,
+                label_transform=None,
                 dims_checker=check_dims,
                 s_epoch=1, 
                 num_epochs=100):
@@ -53,8 +55,8 @@ def train(model,
             # Forward, backward and optimize
 
             pred = model(x)
-
             loss = criterion(pred, y)
+
             loss.backward()
             optimizer.step()
             loss=loss.item()
@@ -76,6 +78,8 @@ def train(model,
                 train_losses,
                 model_name,
                 path,
+                acc_thresh=acc_thresh,
+                label_transform=label_transform,
                 predicter=predicter,
                 dims_checker=dims_checker,
                 validation=False, 
@@ -88,6 +92,8 @@ def train(model,
                 valid_losses,
                 model_name,
                 path,
+                acc_thresh=acc_thresh,
+                label_transform=label_transform,
                 predicter=predicter,
                 dims_checker=dims_checker)
 
@@ -109,8 +115,10 @@ def evaluate(model,
             valid_losses,
             model_name,
             path,
+            acc_thresh=0.5,
             dims_checker=check_dims,
             predicter=None,
+            label_transform=None,
             validation=True, 
             name="Validation"):
 
@@ -145,7 +153,7 @@ def evaluate(model,
 
             # Evaluate
             pred = model(x)
-            
+
             loss = criterion(pred, y).item()
                             
             losses.update(loss)
@@ -153,8 +161,8 @@ def evaluate(model,
             if predicter is not None: 
                 pred = predicter(pred)
             predics.extend(pred)
-            y_predics.extend((pred > 0.5).float())
-            y_targets.extend(y)
+            y_predics.extend((pred > acc_thresh).float())
+            y_targets.extend(y if label_transform is None else label_transform(y))
             
             # update progress bar
             progress.update(x.shape[0], losses)

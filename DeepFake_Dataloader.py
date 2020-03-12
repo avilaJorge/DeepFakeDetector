@@ -209,20 +209,28 @@ def get_dataloaders(image_root=img_root,
                    dataset=DeepFakeHDF5Dataset(),
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
-                   shuffle=_shuffle, 
+                   shuffle=_shuffle,
+                   full_dataset=False,
                    num_workers=_num_wrks):
     
     ds = dataset
     
     # Compute train, val, test splits
-    trn_len, val_len, tst_len = int(len(ds)*0.6), int(len(ds)*0.2), int(len(ds)*0.2)
-    trn_len += (len(ds) - (trn_len + val_len + tst_len))
+    if not full_dataset:
+        trn_len, val_len, tst_len = int(len(ds)*0.6), int(len(ds)*0.2), int(len(ds)*0.2)
+        trn_len += (len(ds) - (trn_len + val_len + tst_len))
+        trn, val, tst = random_split(ds, [trn_len, val_len, tst_len]) 
+    else:
+        trn_len = len(ds)
+        trn = ds
     
-    trn, val, tst = random_split(ds, [trn_len, val_len, tst_len]) 
+
     trn_dl = DataLoader(trn,
-                        batch_size=batch_size, 
+                        batch_size=batch_size if not full_dataset else trn_len, 
                         shuffle=shuffle, 
                         num_workers=num_workers)
+    if full_dataset:
+        return trn_dl
     val_dl = DataLoader(val, 
                         batch_size=batch_size, 
                         shuffle=shuffle, 
