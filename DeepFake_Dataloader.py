@@ -15,24 +15,59 @@ import h5py
 import pprint
 pp = pprint.PrettyPrinter(width=20)
 
+# data_origin = {
+#     'celebA-HQ_10K': 0,
+#     'Flickr-Faces-HQ_10K': 1,
+#     'thispersondoesntexists_10K': 2,
+#     '100KFake_10K': 3,
+#     0: 'celebA-HQ_10K',
+#     1: 'Flickr-Faces-HQ_10K',
+#     2: 'thispersondoesntexists_10K',
+#     3: '100KFake_10K'
+# }
+
 data_origin = {
-    'celebA-HQ_10K': 0,
-    'Flickr-Faces-HQ_10K': 1,
-    'thispersondoesntexists_10K': 2,
-    '100KFake_10K': 3,
-    0: 'celebA-HQ_10K',
-    1: 'Flickr-Faces-HQ_10K',
-    2: 'thispersondoesntexists_10K',
-    3: '100KFake_10K'
+    'stylegan2_cats': 2,
+    'stylegan2_cars': 1,
+    'stylegan2_churches': 3,
+    'lsun_cats': 0,
+    'lsun_cars': 0,
+    'lsun_churches': 1,
+    2: 'stylegan2_cats',
+    3: 'stylegan2_cars',
+    3: 'stylegan2_churches',
+    0: 'lsun_cats',
+    0: 'lsun_cars',
+    1: 'lsun_churches',
+}
+
+rad_size = {
+    'stylegan2_cats': 182,
+    'stylegan2_cars': 363,
+    'stylegan2_churches': 182,
+    'lsun_cats': 182,
+    'lsun_cars': 363,
+    'lsun_churches': 182,
+}
+
+data_img_size = {
+    'stylegan2_cats': 256,
+    'stylegan2_cars': 512,
+    'stylegan2_churches': 256,
+    'lsun_cats': 256,
+    'lsun_cars': 512,
+    'lsun_churches': 256,
 }
 
 # Configuration variables
-img_root    = '/home/jupyter/CSE253_FinalProject/Frequency/Faces-HQ'
+# img_root    = '/home/jupyter/image_folder'
+# img_root    = '/home/jupyter/image_folder_cars'
+img_root    = '/home/jupyter/image_folder_256'
 # fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-fhq_hdf5_pt = '/content/Faces_HQ.hdf5'
+fhq_hdf5_pt = '/content/LSUN.hdf5'
 _batch_size = 128
 _shuffle    = True
-_num_wrks   = 8
+_num_wrks   = 16
 epsilon     = 1e-10
 
 """
@@ -45,14 +80,18 @@ data_transforms = transforms.Compose([
 
 
 # Radial Profile of Shifted Data (Azimuthally Averaged)
-def np_radial_profile(data, center):
+def np_radial_profile(data, center, pad=True, length=363):
     y, x = np.indices((data.shape))
     r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
     r = r.astype(np.int)
 
     tbin = np.bincount(r.ravel(), data.ravel())
     nr = np.bincount(r.ravel())
+
     radialprofile = tbin / nr
+    
+#     if pad:
+#         radialprofile = np.pad(radialprofile, (0, length - tbin.shape[0]), 'constant', constant_values=(0,0))
     return radialprofile
 
 def radial_profile(data, center):
@@ -107,15 +146,23 @@ class DeepFakePreProcessor(ImageFolder):
         Target folders where 1 is fake and 0 is real
         """
         self.switcher = {
-            'celebA-HQ_10K': 0,
-            'Flickr-Faces-HQ_10K': 0,
-            'thispersondoesntexists_10K': 1,
-            '100KFake_10K': 1
+            'stylegan2_cats': 1,
+            'stylegan2_cars': 1,
+            'stylegan2_churches': 1,
+            'lsun_cats': 0,
+            'lsun_cars': 0,
+            'lsun_churches': 0,
         }
+#         self.switcher = {
+#             'celebA-HQ_10K': 0,
+#             'Flickr-Faces-HQ_10K': 0,
+#             'thispersondoesntexists_10K': 1,
+#             '100KFake_10K': 1
+#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
-        
+
         ms_img = np_magnitude_spectrum(img)
         rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
         return rad_p, self.switcher[self.classes[t]], self.classes[t]
@@ -135,11 +182,19 @@ class DeepFakeDataset(ImageFolder):
         Target folders where 1 is fake and 0 is real
         """
         self.switcher = {
-            'celebA-HQ_10K': 0,
-            'Flickr-Faces-HQ_10K': 0,
-            'thispersondoesntexists_10K': 1,
-            '100KFake_10K': 1
+            'stylegan2_cats': 1,
+            'stylegan2_cars': 1,
+            'stylegan2_churches': 1,
+            'lsun_cats': 0,
+            'lsun_cars': 0,
+            'lsun_churches': 0,
         }
+#         self.switcher = {
+#             'celebA-HQ_10K': 0,
+#             'Flickr-Faces-HQ_10K': 0,
+#             'thispersondoesntexists_10K': 1,
+#             '100KFake_10K': 1
+#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakeDataset, self).__getitem__(index)
@@ -206,14 +261,14 @@ def get_preprocessors(image_root=img_root,
     Helper method for creating and returning the all three dataloaders
 """
 def get_dataloaders(image_root=img_root,
-                   dataset=DeepFakeHDF5Dataset(),
+                   dataset=DeepFakeHDF5Dataset,
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
                    shuffle=_shuffle,
                    full_dataset=False,
                    num_workers=_num_wrks):
     
-    ds = dataset
+    ds = dataset()
     
     # Compute train, val, test splits
     if not full_dataset:
