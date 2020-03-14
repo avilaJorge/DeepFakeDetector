@@ -16,15 +16,15 @@
 - https://storage.googleapis.com/img-hosting-bucket/LSUN.hdf5
 
 ***LSUN_BCC_256.hdf5***
-- Dataset containing only images of size $256^2$
+- Dataset containing only images of size ![formula](https://render.githubusercontent.com/render/math?math=256^2)
 - Includes cats, churches, and bedrooms.
 - https://storage.googleapis.com/img-hosting-bucket/LSUN_BCC_256.hdf5
 
 ***LSUN_256.hdf5***
-- Dataset containing only images of size $256^2$
+- Dataset containing only images of size ![formula](https://render.githubusercontent.com/render/math?math=256^2)
 - Includes cats and churches.
 - https://storage.googleapis.com/img-hosting-bucket/LSUN_256.hdf5
 
 ***LSUN_Cars.hdf5***
-- Dataset containing only cars of size $512^2$
+- Dataset containing only cars of size ![formula](https://render.githubusercontent.com/render/math?math=512^2)
 - https://storage.googleapis.com/img-hosting-bucket/LSUN_Cars.hdf5
