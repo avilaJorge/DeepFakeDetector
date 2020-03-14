@@ -138,10 +138,12 @@ def pil_grey_loader(path):
         img = Image.open(f)
         return img.convert('L')
     
+def pil_grey_converter(img):
+    return img.convert('L')
+    
 class DeepFakePreProcessor(ImageFolder):
     def __init__(self, root, transforms):
-        super(DeepFakePreProcessor, self).__init__(root=root, 
-                                              loader=pil_grey_loader,
+        super(DeepFakePreProcessor, self).__init__(root=root,
                                               transform=None)
         
         self.images = self.samples
@@ -167,8 +169,9 @@ class DeepFakePreProcessor(ImageFolder):
         
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
-
-        ms_img = np_magnitude_spectrum(img)
+        gray_img = pil_grey_converter(img)
+        
+        ms_img = np_magnitude_spectrum(gray_img)
         rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
         return rad_p, self.switcher[self.classes[t]], self.classes[t], np.asarray(img), ms_img
     
