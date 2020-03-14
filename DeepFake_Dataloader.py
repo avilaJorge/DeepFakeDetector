@@ -69,7 +69,7 @@ data_img_size = {
 # img_root    = '/home/jupyter/image_folder_256'
 img_root    = '/home/jupyter/image_folder_bcc_256'
 # fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-fhq_hdf5_pt = '~/CSE253_FinalProject/LSUN.hdf5'
+fhq_hdf5_pt = '/content/LSUN_BCC_256.hdf5'
 _batch_size = 128
 _shuffle    = True
 _num_wrks   = 16
@@ -173,7 +173,7 @@ class DeepFakePreProcessor(ImageFolder):
         
         ms_img = np_magnitude_spectrum(gray_img)
         rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
-        return rad_p, self.switcher[self.classes[t]], self.classes[t], np.asarray(img), ms_img
+        return rad_p, self.switcher[self.classes[t]], self.classes[t]
     
 
 class DeepFakeDataset(ImageFolder):
@@ -276,7 +276,7 @@ def get_dataloaders(image_root=img_root,
                    full_dataset=False,
                    num_workers=_num_wrks):
     
-    ds = dataset()
+    ds = dataset
     
     # Compute train, val, test splits
     if not full_dataset:
