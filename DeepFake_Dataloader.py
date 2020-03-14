@@ -170,7 +170,7 @@ class DeepFakePreProcessor(ImageFolder):
 
         ms_img = np_magnitude_spectrum(img)
         rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
-        return rad_p, self.switcher[self.classes[t]], self.classes[t]
+        return rad_p, self.switcher[self.classes[t]], self.classes[t], np.asarray(img), ms_img
     
 
 class DeepFakeDataset(ImageFolder):
