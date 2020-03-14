@@ -27,18 +27,18 @@ pp = pprint.PrettyPrinter(width=20)
 # }
 
 data_origin = {
-    'stylegan2_cats': 2,
-    'stylegan2_cars': 1,
-    'stylegan2_churches': 3,
-    'lsun_cats': 0,
-    'lsun_cars': 0,
-    'lsun_churches': 1,
-    2: 'stylegan2_cats',
-    3: 'stylegan2_cars',
-    3: 'stylegan2_churches',
-    0: 'lsun_cats',
-    0: 'lsun_cars',
-    1: 'lsun_churches',
+    'lsun_bedrooms': 0,
+    'lsun_cats': 1,
+    'lsun_churches': 2,
+    'stylegan1_bedrooms': 3,
+    'stylegan2_cats': 4,
+    'stylegan2_churches': 5,
+    0: 'lsun_bedrooms',
+    1: 'lsun_cats',
+    2: 'lsun_churches',
+    3: 'stylegan1_bedrooms',
+    4: 'stylegan2_cats',
+    5: 'stylegan2_churches',
 }
 
 rad_size = {
@@ -48,6 +48,8 @@ rad_size = {
     'lsun_cats': 182,
     'lsun_cars': 363,
     'lsun_churches': 182,
+    'stylegan1_bedrooms': 182,
+    'lsun_bedrooms': 182
 }
 
 data_img_size = {
@@ -57,14 +59,17 @@ data_img_size = {
     'lsun_cats': 256,
     'lsun_cars': 512,
     'lsun_churches': 256,
+    'stylegan1_bedrooms': 256,
+    'lsun_bedrooms': 256
 }
 
 # Configuration variables
 # img_root    = '/home/jupyter/image_folder'
 # img_root    = '/home/jupyter/image_folder_cars'
-img_root    = '/home/jupyter/image_folder_256'
+# img_root    = '/home/jupyter/image_folder_256'
+img_root    = '/home/jupyter/image_folder_bcc_256'
 # fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-fhq_hdf5_pt = '/content/LSUN.hdf5'
+fhq_hdf5_pt = '/content/LSUN_BCC_256.hdf5'
 _batch_size = 128
 _shuffle    = True
 _num_wrks   = 16
@@ -151,14 +156,14 @@ class DeepFakePreProcessor(ImageFolder):
             'stylegan2_churches': 1,
             'lsun_cats': 0,
             'lsun_cars': 0,
+            'lsun_bedrooms': 0,
+            'stylegan1_bedrooms': 1,
             'lsun_churches': 0,
+            'celebA-HQ_10K': 0,
+            'Flickr-Faces-HQ_10K': 0,
+            'thispersondoesntexists_10K': 1,
+            '100KFake_10K': 1
         }
-#         self.switcher = {
-#             'celebA-HQ_10K': 0,
-#             'Flickr-Faces-HQ_10K': 0,
-#             'thispersondoesntexists_10K': 1,
-#             '100KFake_10K': 1
-#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
@@ -187,14 +192,14 @@ class DeepFakeDataset(ImageFolder):
             'stylegan2_churches': 1,
             'lsun_cats': 0,
             'lsun_cars': 0,
+            'lsun_bedrooms': 0,
+            'stylegan1_bedrooms': 1,
             'lsun_churches': 0,
+            'celebA-HQ_10K': 0,
+            'Flickr-Faces-HQ_10K': 0,
+            'thispersondoesntexists_10K': 1,
+            '100KFake_10K': 1
         }
-#         self.switcher = {
-#             'celebA-HQ_10K': 0,
-#             'Flickr-Faces-HQ_10K': 0,
-#             'thispersondoesntexists_10K': 1,
-#             '100KFake_10K': 1
-#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakeDataset, self).__getitem__(index)
