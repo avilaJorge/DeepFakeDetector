@@ -27,18 +27,18 @@ pp = pprint.PrettyPrinter(width=20)
 # }
 
 data_origin = {
-    'stylegan2_cats': 2,
-    'stylegan2_cars': 1,
-    'stylegan2_churches': 3,
-    'lsun_cats': 0,
-    'lsun_cars': 0,
-    'lsun_churches': 1,
-    2: 'stylegan2_cats',
-    3: 'stylegan2_cars',
-    3: 'stylegan2_churches',
-    0: 'lsun_cats',
-    0: 'lsun_cars',
-    1: 'lsun_churches',
+    'lsun_bedrooms': 0,
+    'lsun_cats': 1,
+    'lsun_churches': 2,
+    'stylegan1_bedrooms': 3,
+    'stylegan2_cats': 4,
+    'stylegan2_churches': 5,
+    0: 'lsun_bedrooms',
+    1: 'lsun_cats',
+    2: 'lsun_churches',
+    3: 'stylegan1_bedrooms',
+    4: 'stylegan2_cats',
+    5: 'stylegan2_churches',
 }
 
 rad_size = {
@@ -48,6 +48,8 @@ rad_size = {
     'lsun_cats': 182,
     'lsun_cars': 363,
     'lsun_churches': 182,
+    'stylegan1_bedrooms': 182,
+    'lsun_bedrooms': 182
 }
 
 data_img_size = {
@@ -57,14 +59,17 @@ data_img_size = {
     'lsun_cats': 256,
     'lsun_cars': 512,
     'lsun_churches': 256,
+    'stylegan1_bedrooms': 256,
+    'lsun_bedrooms': 256
 }
 
 # Configuration variables
 # img_root    = '/home/jupyter/image_folder'
 # img_root    = '/home/jupyter/image_folder_cars'
-img_root    = '/home/jupyter/image_folder_256'
+# img_root    = '/home/jupyter/image_folder_256'
+img_root    = '/home/jupyter/image_folder_bcc_256'
 # fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-fhq_hdf5_pt = '/content/LSUN.hdf5'
+fhq_hdf5_pt = '/content/LSUN_BCC_256.hdf5'
 _batch_size = 128
 _shuffle    = True
 _num_wrks   = 16
@@ -133,10 +138,12 @@ def pil_grey_loader(path):
         img = Image.open(f)
         return img.convert('L')
     
+def pil_grey_converter(img):
+    return img.convert('L')
+    
 class DeepFakePreProcessor(ImageFolder):
     def __init__(self, root, transforms):
-        super(DeepFakePreProcessor, self).__init__(root=root, 
-                                              loader=pil_grey_loader,
+        super(DeepFakePreProcessor, self).__init__(root=root,
                                               transform=None)
         
         self.images = self.samples
@@ -151,21 +158,22 @@ class DeepFakePreProcessor(ImageFolder):
             'stylegan2_churches': 1,
             'lsun_cats': 0,
             'lsun_cars': 0,
+            'lsun_bedrooms': 0,
+            'stylegan1_bedrooms': 1,
             'lsun_churches': 0,
+            'celebA-HQ_10K': 0,
+            'Flickr-Faces-HQ_10K': 0,
+            'thispersondoesntexists_10K': 1,
+            '100KFake_10K': 1
         }
-#         self.switcher = {
-#             'celebA-HQ_10K': 0,
-#             'Flickr-Faces-HQ_10K': 0,
-#             'thispersondoesntexists_10K': 1,
-#             '100KFake_10K': 1
-#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
-
-        ms_img = np_magnitude_spectrum(img)
+        gray_img = pil_grey_converter(img)
+        
+        ms_img = np_magnitude_spectrum(gray_img)
         rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
-        return rad_p, self.switcher[self.classes[t]], self.classes[t]
+        return rad_p, self.switcher[self.classes[t]], self.classes[t], np.asarray(img), ms_img
     
 
 class DeepFakeDataset(ImageFolder):
@@ -187,14 +195,14 @@ class DeepFakeDataset(ImageFolder):
             'stylegan2_churches': 1,
             'lsun_cats': 0,
             'lsun_cars': 0,
+            'lsun_bedrooms': 0,
+            'stylegan1_bedrooms': 1,
             'lsun_churches': 0,
+            'celebA-HQ_10K': 0,
+            'Flickr-Faces-HQ_10K': 0,
+            'thispersondoesntexists_10K': 1,
+            '100KFake_10K': 1
         }
-#         self.switcher = {
-#             'celebA-HQ_10K': 0,
-#             'Flickr-Faces-HQ_10K': 0,
-#             'thispersondoesntexists_10K': 1,
-#             '100KFake_10K': 1
-#         }
         
     def __getitem__(self, index):
         img, t = super(DeepFakeDataset, self).__getitem__(index)
@@ -268,7 +276,7 @@ def get_dataloaders(image_root=img_root,
                    full_dataset=False,
                    num_workers=_num_wrks):
     
-    ds = dataset()
+    ds = dataset
     
     # Compute train, val, test splits
     if not full_dataset:

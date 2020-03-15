@@ -9,7 +9,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 best_loss    = float('inf')
 prev_loss    = float('inf')
 loss_inc_cnt = 0
-stp_erly_cnt = 1
+stp_erly_cnt = 5
 stop_early   = False
 dt = datetime.now().strftime("%m_%d_%H_%M")
 
