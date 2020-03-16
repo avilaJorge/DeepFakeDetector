@@ -214,15 +214,21 @@ class DeepFakeDataset(ImageFolder):
     
 class DeepFakeHDF5Dataset(Dataset):
     
-    def __init__(self, hdf5_path=fhq_hdf5_pt):
+    def __init__(self, hdf5_path=fhq_hdf5_pt, queries=[]):
         super(DeepFakeHDF5Dataset, self).__init__()
         self.data = None
         self.lbls = None
         self.og_d = None
-        with h5py.File(fhq_hdf5_pt, 'r') as hdf5_file: 
-            self.data = hdf5_file['fft_data'][:]
-            self.lbls = hdf5_file['lbl_data'][:]
+        with h5py.File(hdf5_path, 'r') as hdf5_file: 
             self.og_d = hdf5_file['orgn_data'][:]
+            if len(queries) > 0:
+                ids = list(set().union(*[[data_origin[data] for data in data_origin.keys() if (query in str(data))] for query in queries]))
+                indices = [i for i,og_d in enumerate(self.og_d) if (og_d in ids)]
+                self.data = hdf5_file['fft_data'][indices]
+                self.lbls = hdf5_file['lbl_data'][indices]
+            else:
+                self.data = hdf5_file['fft_data'][:]
+                self.lbls = hdf5_file['lbl_data'][:]
         
     def __getitem__(self, index):
 

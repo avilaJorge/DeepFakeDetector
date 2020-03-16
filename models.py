@@ -85,3 +85,20 @@ class KMeans:
                     Niter, end - start, Niter, (end-start) / Niter))
 
         return cl, c
+
+class DNN(nn.Module):
+    
+    def __init__(self, in_dims, hidden_size=256, num_layers=1):
+        super(DNN, self).__init__()
+        self.linear_in = nn.Linear(in_dims, hidden_size)
+        self.batch_norm = torch.nn.BatchNorm1d(1)
+        self.relu = torch.nn.ReLU(inplace=True)
+        self.linear_hidden = (num_layers - 1) * [nn.Linear(hidden_size, hidden_size)]
+        self.linear_out = nn.Linear(hidden_size, 1)
+        
+    def forward(self, x):
+        y = self.linear_in(self.batch_norm(x))
+        for layer in self.linear_hidden:
+            y = layer(self.batch_norm(self.relu(y)))
+        y = self.linear_out(self.batch_norm(self.relu(y))).squeeze(-1)
+        return y
