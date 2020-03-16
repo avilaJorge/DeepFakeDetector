@@ -9,7 +9,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 best_loss    = float('inf')
 prev_loss    = float('inf')
 loss_inc_cnt = 0
-stp_erly_cnt = 5
+stp_erly_cnt = 1
 stop_early   = False
 dt = datetime.now().strftime("%m_%d_%H_%M")
 
@@ -25,7 +25,8 @@ def train(model,
                 label_transform=None,
                 dims_checker=check_dims,
                 s_epoch=1, 
-                num_epochs=100):
+                num_epochs=100,
+                choice = None):
     
     global best_loss
     global prev_loss
@@ -48,7 +49,16 @@ def train(model,
         
         for i, (x, y) in enumerate(dataloader):
             optimizer.zero_grad()
-
+            
+            # change the filter
+            n = x.shape[1]
+            part_freq = int(n/3)
+            if choice == 'low_pass':
+                x = x[:, :part_freq]
+            elif choice == 'band_pass':
+                x = x[:, part_freq:2*part_freq]
+            elif choice == 'high_pass':
+                x = x[:, n-part_freq:]
             # Move to GPU
             x = dims_checker(x).to(device)
             y = y.to(device)
@@ -83,7 +93,8 @@ def train(model,
                 predicter=predicter,
                 dims_checker=dims_checker,
                 validation=False, 
-                name="Training")
+                name="Training",
+                choice = choice)
         evaluate(model, 
                 optimizer, 
                 criterion,
@@ -95,7 +106,8 @@ def train(model,
                 acc_thresh=acc_thresh,
                 label_transform=label_transform,
                 predicter=predicter,
-                dims_checker=dims_checker)
+                dims_checker=dims_checker,
+                choice = choice)
 
         if stop_early:
             break
@@ -120,7 +132,8 @@ def evaluate(model,
             predicter=None,
             label_transform=None,
             validation=True, 
-            name="Validation"):
+            name="Validation",
+            choice = None):
 
     global best_loss
     global prev_loss
@@ -146,6 +159,16 @@ def evaluate(model,
         losses = RunningAverage()
         
         for i, (x, y) in enumerate(data_loader):
+            
+            # change the filter
+            n = x.shape[1]
+            part_freq = int(n/3)
+            if choice == 'low_pass':
+                x = x[:, :part_freq]
+            elif choice == 'band_pass':
+                x = x[:, part_freq:2*part_freq]
+            elif choice == 'high_pass':
+                x = x[:, n-part_freq:]
 
             # Move to GPU
             x = dims_checker(x).to(device)
