@@ -11,35 +11,6 @@ import numpy as np
 from PIL import Image
 # hdf5 import
 import h5py
-# Pretty Print
-import pprint
-pp = pprint.PrettyPrinter(width=20)
-
-# data_origin = {
-#     'celebA-HQ_10K': 0,
-#     'Flickr-Faces-HQ_10K': 1,
-#     'thispersondoesntexists_10K': 2,
-#     '100KFake_10K': 3,
-#     0: 'celebA-HQ_10K',
-#     1: 'Flickr-Faces-HQ_10K',
-#     2: 'thispersondoesntexists_10K',
-#     3: '100KFake_10K'
-# }
-
-data_origin = {
-    'lsun_bedrooms': 0,
-    'lsun_cats': 1,
-    'lsun_churches': 2,
-    'stylegan1_bedrooms': 3,
-    'stylegan2_cats': 4,
-    'stylegan2_churches': 5,
-    0: 'lsun_bedrooms',
-    1: 'lsun_cats',
-    2: 'lsun_churches',
-    3: 'stylegan1_bedrooms',
-    4: 'stylegan2_cats',
-    5: 'stylegan2_churches',
-}
 
 rad_size = {
     'stylegan2_cats': 182,
@@ -63,20 +34,22 @@ data_img_size = {
     'lsun_bedrooms': 256
 }
 
-# Configuration variables
-# img_root    = '/home/jupyter/image_folder'
-# img_root    = '/home/jupyter/image_folder_cars'
-# img_root    = '/home/jupyter/image_folder_256'
-img_root    = '/home/jupyter/image_folder_bcc_256'
-# fhq_hdf5_pt = '/home/jupyter/CSE253_FinalProject/Faces_HQ.hdf5'
-fhq_hdf5_pt = '/content/LSUN_BCC_256.hdf5'
-_batch_size = 128
-_shuffle    = True
-_num_wrks   = 16
+"""
+For np.log
+"""
 epsilon     = 1e-10
+    """
+    
+    Args:
+        
+    Returns:
+        
+    Ensures:
+        
+    """
 
 """
-  Transformation applied to grayscale images
+  Transformation applied to grayscale images (Not used)
 """
 data_transforms = transforms.Compose([
     transforms.ToTensor(),
@@ -123,32 +96,50 @@ def magnitude_spectrum(img):
     t_img = torch.roll(t_img, shifts=shifts, dims=(0, 1))
     return 20*torch.log(torch.norm(t_img, dim=2))
 
+"""
+Tranformations applied in Dataset class.  Passed in as parameter to get_preprocessor
+"""
+
 # Image loader 
 def pil_grey_loader(path):
-    """
-    
-    Args:
-        
-    Returns:
-        
-    Ensures:
-        
-    """
     with open(path, 'rb') as f:
         img = Image.open(f)
-        return img.convert('L')
+        return img.convert('L'), img
     
-def pil_grey_converter(img):
-    return img.convert('L')
+def pil_grey_converter(img, img_class):
+    return img.convert('L'), img
+
+stgn2_cars_transforms = transforms.Compose([
+    transforms.CenterCrop(256)
+])
+
+lsun_cars_transforms  = transforms.Compose([
+    transforms.Resize(256)
+])
+
+def convert_to_256(img, img_class):
+    new_img, col_img = pil_grey_converter(img, img_class)
+    if (img_class == 'lsun_cars'):
+        new_img = lsun_cars_transforms(new_img)
+        col_img = lsun_cars_transforms(col_img)
+    if (img_class == 'stylegan2_cars'):
+        new_img = stgn2_cars_transforms(new_img)
+        col_img = stgn2_cars_transforms(col_img)
+    return np.asarray(new_img), col_img
+
+"""
+Dataset pre-processor for Durall deepfake detection model.
+"""
     
 class DeepFakePreProcessor(ImageFolder):
-    def __init__(self, root, transforms):
+    def __init__(self, root, img_transforms, output_size):
+        print(root)
         super(DeepFakePreProcessor, self).__init__(root=root,
                                               transform=None)
-        
+        self.img_transforms = img_transforms
         self.images = self.samples
-        pp.pprint("Classes: %s" % self.classes)
-        pp.pprint("Indices: %s" % self.class_to_idx)
+        self.output_sz = output_size
+        
         """
         Target folders where 1 is fake and 0 is real
         """
@@ -169,13 +160,42 @@ class DeepFakePreProcessor(ImageFolder):
         
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
-        gray_img = pil_grey_converter(img)
+        
+        img_class = self.classes[t]
+        gray_img, img = self.img_transforms(img, img_class)
         
         ms_img = np_magnitude_spectrum(gray_img)
-        rad_p = np_radial_profile(ms_img, center=(ms_img.shape[0]/2, ms_img.shape[1]/2))
-        return rad_p, self.switcher[self.classes[t]], self.classes[t], np.asarray(img), ms_img
+        rad_p = np_radial_profile(
+            ms_img, 
+            center=(ms_img.shape[0]/2, ms_img.shape[1]/2), 
+            pad=True, 
+            length=self.output_sz)
+            
+        return rad_p, self.switcher[img_class], img_class, np.asarray(img), ms_img
     
-
+"""
+    get_preprocessor
+    Helper method for creating and returning the preprocessor
+"""
+def get_preprocessors(image_root=None, 
+                   transforms=pil_grey_converter, 
+                   batch_size=32, 
+                   shuffle=True,
+                   destf_hdf5=None,
+                   output_size=182,
+                   num_workers=0):
+    if image_root is None or destf_hdf5 is None:
+        raise ValueError("Must specify image_root and destf_hdf5 (Destination HDF5 file)")
+            
+    
+    ds = DeepFakePreProcessor(root=image_root, img_transforms=transforms, output_size=output_size)
+    
+    return DataLoader(ds,
+                      batch_size=batch_size, 
+                      shuffle=shuffle, 
+                      num_workers=num_workers)
+    
+    
 class DeepFakeDataset(ImageFolder):
     
     def __init__(self, root, transforms):
@@ -214,7 +234,7 @@ class DeepFakeDataset(ImageFolder):
     
 class DeepFakeHDF5Dataset(Dataset):
     
-    def __init__(self, hdf5_path=fhq_hdf5_pt, queries=[]):
+    def __init__(self, hdf5_path=None, queries=[]):
         super(DeepFakeHDF5Dataset, self).__init__()
         self.data = None
         self.lbls = None
@@ -242,7 +262,7 @@ class DeepFakeHDF5Dataset(Dataset):
 
 class DeepFakeHDF5Dataset_SVM(DeepFakeHDF5Dataset):
     
-    def __init__(self, hdf5_path=fhq_hdf5_pt):
+    def __init__(self, hdf5_path=None):
         super(DeepFakeHDF5Dataset_SVM, self).__init__()
         
     def __getitem__(self, index):
@@ -252,29 +272,12 @@ class DeepFakeHDF5Dataset_SVM(DeepFakeHDF5Dataset):
         label  = (torch.FloatTensor([1]) * label)
         return sample, label
 
-
-"""
-    get_preprocessor
-    Helper method for creating and returning the preprocessor
-"""
-def get_preprocessors(image_root=img_root, 
-                   transforms=data_transforms, 
-                   batch_size=_batch_size, 
-                   shuffle=_shuffle, 
-                   num_workers=_num_wrks):
-    
-    ds = DeepFakePreProcessor(root=img_root, transforms=transforms)
-    
-    return DataLoader(ds,
-                      batch_size=batch_size, 
-                      shuffle=shuffle, 
-                      num_workers=num_workers)
         
 """
     get_dataloaders
     Helper method for creating and returning the all three dataloaders
 """
-def get_dataloaders(image_root=img_root,
+def get_dataloaders(image_root=None,
                    dataset=DeepFakeHDF5Dataset,
                    transforms=data_transforms, 
                    batch_size=_batch_size, 
