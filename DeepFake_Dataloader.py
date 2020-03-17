@@ -38,15 +38,6 @@ data_img_size = {
 For np.log
 """
 epsilon     = 1e-10
-    """
-    
-    Args:
-        
-    Returns:
-        
-    Ensures:
-        
-    """
 
 """
   Transformation applied to grayscale images (Not used)
@@ -279,11 +270,11 @@ class DeepFakeHDF5Dataset_SVM(DeepFakeHDF5Dataset):
 """
 def get_dataloaders(image_root=None,
                    dataset=DeepFakeHDF5Dataset,
-                   transforms=data_transforms, 
-                   batch_size=_batch_size, 
-                   shuffle=_shuffle,
+                   transforms=None, 
+                   batch_size=32, 
+                   shuffle=True,
                    full_dataset=False,
-                   num_workers=_num_wrks):
+                   num_workers=0):
     
     ds = dataset
     
