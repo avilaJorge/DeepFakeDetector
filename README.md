@@ -35,3 +35,5 @@
 - https://storage.googleapis.com/img-hosting-bucket/LSUN_BCCC_256.hdf5
 
 ![Collage](https://storage.googleapis.com/img-hosting-bucket/collage.jpg)
+
+![Mean & Std.](https://storage.googleapis.com/img-hosting-bucket/mean_plt_bccc.jpg)
