@@ -28,3 +28,10 @@
 ***LSUN_Cars.hdf5***
 - Dataset containing only cars of size ![formula](https://render.githubusercontent.com/render/math?math=512^2)
 - https://storage.googleapis.com/img-hosting-bucket/LSUN_Cars.hdf5
+
+***LSUN_BCCC_256.hdf5***
+- Dataset containing all four datasets of size 256x256.  
+- StyleGAN2 Cars is cropped and LSUN cars is resized.
+- https://storage.googleapis.com/img-hosting-bucket/LSUN_BCCC_256.hdf5
+
+![Collage](https://storage.googleapis.com/img-hosting-bucket/collage.jpg)
