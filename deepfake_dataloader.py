@@ -95,10 +95,7 @@ Tranformations applied in Dataset class.  Passed in as parameter to get_preproce
 def pil_grey_loader(path):
     with open(path, 'rb') as f:
         img = Image.open(f)
-        return img.convert('L'), img
-    
-def pil_grey_converter(img, img_class):
-    return img.convert('L'), img
+        return (img.convert('L'), img, path)
 
 stgn2_cars_transforms = transforms.Compose([
     transforms.CenterCrop(256)
@@ -108,25 +105,27 @@ lsun_cars_transforms  = transforms.Compose([
     transforms.Resize(256)
 ])
 
-def convert_to_256(img, img_class):
-    new_img, col_img = pil_grey_converter(img, img_class)
+def convert_to_256(img, gimg,  img_class):
     if (img_class == 'lsun_cars'):
-        new_img = lsun_cars_transforms(new_img)
-        col_img = lsun_cars_transforms(col_img)
+        gimg = lsun_cars_transforms(gimg)
+        img  = lsun_cars_transforms(img)
     if (img_class == 'stylegan2_cars'):
-        new_img = stgn2_cars_transforms(new_img)
-        col_img = stgn2_cars_transforms(col_img)
-    return np.asarray(new_img), col_img
+        gimg = stgn2_cars_transforms(gimg)
+        img  = stgn2_cars_transforms(img)
+    return np.asarray(gimg), img 
 
 """
 Dataset pre-processor for Durall deepfake detection model.
 """
     
 class DeepFakePreProcessor(ImageFolder):
-    def __init__(self, root, img_transforms, output_size):
+    def __init__(self, root, img_transforms, output_size, loader):
         print(root)
-        super(DeepFakePreProcessor, self).__init__(root=root,
-                                              transform=None)
+        super(DeepFakePreProcessor, self).__init__(
+                                              root=root,
+                                              loader=loader,
+                                              transform=None,        # This must be set to None
+                                              target_transform=None) # This must be set to None
         self.img_transforms = img_transforms
         self.images = self.samples
         self.output_sz = output_size
@@ -152,8 +151,9 @@ class DeepFakePreProcessor(ImageFolder):
     def __getitem__(self, index):
         img, t = super(DeepFakePreProcessor, self).__getitem__(index)
         
+        gray_img, img, path = img
         img_class = self.classes[t]
-        gray_img, img = self.img_transforms(img, img_class)
+        gray_img, img = self.img_transforms(img, gray_img, img_class)
         
         ms_img = np_magnitude_spectrum(gray_img)
         rad_p = np_radial_profile(
@@ -162,24 +162,25 @@ class DeepFakePreProcessor(ImageFolder):
             pad=True, 
             length=self.output_sz)
             
-        return rad_p, self.switcher[img_class], img_class, np.asarray(img), ms_img
+        return rad_p, self.switcher[img_class], img_class, np.asarray(img), ms_img, path
     
 """
     get_preprocessor
     Helper method for creating and returning the preprocessor
 """
 def get_preprocessors(image_root=None, 
-                   transforms=pil_grey_converter, 
+                   transforms=None, 
                    batch_size=32, 
                    shuffle=True,
                    destf_hdf5=None,
                    output_size=182,
-                   num_workers=0):
+                   num_workers=0,
+                   loader=pil_grey_loader):
     if image_root is None or destf_hdf5 is None:
         raise ValueError("Must specify image_root and destf_hdf5 (Destination HDF5 file)")
             
     
-    ds = DeepFakePreProcessor(root=image_root, img_transforms=transforms, output_size=output_size)
+    ds = DeepFakePreProcessor(root=image_root, img_transforms=transforms, output_size=output_size, loader=loader)
     
     return DataLoader(ds,
                       batch_size=batch_size, 
@@ -237,15 +238,21 @@ class DeepFakeHDF5Dataset(Dataset):
                 indices = [i for i,og_d in enumerate(self.og_d) if (og_d in ids)]
                 self.data = hdf5_file['fft_data'][indices]
                 self.lbls = hdf5_file['lbl_data'][indices]
+                self.path = hdf5_file['file_name'][indices]
+                self.clas = hdf5_file['orgn_data'][indices]
             else:
                 self.data = hdf5_file['fft_data'][:]
                 self.lbls = hdf5_file['lbl_data'][:]
+                self.path = hdf5_file['file_name'][:]
+                self.clas = hdf5_file['orgn_data'][:]
         
     def __getitem__(self, index):
 
         sample = torch.from_numpy(self.data[index,:]).float()
         label  = ((torch.FloatTensor([1]) * self.lbls[index]))
-        return sample, label
+        img_pt = np.frombuffer(self.path[index], dtype=np.uint8)
+        img_pt = np.pad(img_pt, (0, 100 - img_pt.shape[0]), 'constant', constant_values=(0))
+        return sample, label, img_pt, self.clas[index]
                 
     
     def __len__(self):
@@ -254,14 +261,16 @@ class DeepFakeHDF5Dataset(Dataset):
 class DeepFakeHDF5Dataset_SVM(DeepFakeHDF5Dataset):
     
     def __init__(self, hdf5_path=None):
-        super(DeepFakeHDF5Dataset_SVM, self).__init__()
+        super(DeepFakeHDF5Dataset_SVM, self).__init__(hdf5_path=hdf5_path)
         
     def __getitem__(self, index):
 
         sample = torch.from_numpy(self.data[index,:]).float()
         label  = 1  if self.lbls[index] == 1 else -1
         label  = (torch.FloatTensor([1]) * label)
-        return sample, label
+        img_pt = np.frombuffer(self.path[index], dtype=np.uint8)
+        img_pt = np.pad(img_pt, (0, 100 - img_pt.shape[0]), 'constant', constant_values=(0))
+        return sample, label, img_pt, self.clas[index]
 
         
 """

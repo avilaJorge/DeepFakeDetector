@@ -11,6 +11,7 @@ prev_loss    = float('inf')
 loss_inc_cnt = 0
 stp_erly_cnt = 1
 stop_early   = False
+predictions  = []
 dt = datetime.now().strftime("%m_%d_%H_%M")
 
 def train(model,
@@ -47,7 +48,7 @@ def train(model,
                                    
         train_loss = RunningAverage()
         
-        for i, (x, y) in enumerate(dataloader):
+        for i, (x, y, _, _) in enumerate(dataloader):
             optimizer.zero_grad()
             
             # change the filter
@@ -129,6 +130,7 @@ def evaluate(model,
             path,
             acc_thresh=0.5,
             dims_checker=check_dims,
+            eval_info=None,
             predicter=None,
             label_transform=None,
             validation=True, 
@@ -148,6 +150,9 @@ def evaluate(model,
     y_predics = []
     y_targets = []
     predics   = []
+    img_paths = []
+    img_class = []
+    img_data  = []
     
     with torch.no_grad():
                             
@@ -158,7 +163,7 @@ def evaluate(model,
         
         losses = RunningAverage()
         
-        for i, (x, y) in enumerate(data_loader):
+        for i, (x, y, img_path, img_c) in enumerate(data_loader):
             
             # change the filter
             n = x.shape[1]
@@ -187,6 +192,11 @@ def evaluate(model,
             y_predics.extend((pred > acc_thresh).float())
             y_targets.extend(y if label_transform is None else label_transform(y))
             
+            if eval_info is not None:
+                img_paths.extend(img_path)
+                img_class.extend(img_c)
+                img_data.extend(x)
+            
             # update progress bar
             progress.update(x.shape[0], losses)
                             
@@ -201,6 +211,15 @@ def evaluate(model,
         y_targ = torch.tensor(y_targets, dtype=torch.int64)
         accuracy = torch.mean((y_pred == y_targ).float())
         print(name + ' accuracy: {:.4f}%'.format(float(accuracy) * 100))
+        
+        if eval_info is not None:
+            eval_info['y_predics'] = y_predics
+            eval_info['y_targets'] = y_targets
+            eval_info['predics']   = predics
+            eval_info['img_paths'] = img_paths
+            eval_info['img_class'] = img_class
+            eval_info['img_data']  = img_data
+            eval_info['accuracy']  = (y_pred == y_targ).int()
 
         if validation:
             if best_loss > loss:
