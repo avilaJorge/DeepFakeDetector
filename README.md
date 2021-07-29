@@ -1,4 +1,11 @@
-# CSE253_FinalProject
+# Deep Fake Detector 
+
+A deep fake detector based on this [paper](https://storage.googleapis.com/img-hosting-bucket/unmasking.pdf).  The code in this paper was rewritten in PyTorch and tested on StyleGAN and StyleGAN2 images.
+
+StyleGAN and StyleGAN2 images were generated using the code from the following repos.
+
+[StyleGAN](https://github.com/NVlabs/stylegan)
+[StyleGAN2](https://github.com/NVlabs/stylegan2)
 
 ## Pre-Processed Datasets
 
